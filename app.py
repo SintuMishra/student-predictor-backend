@@ -5,8 +5,8 @@ import os
 
 app = Flask(__name__)
 
-# ✅ FIXED CORS
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+# ✅ Allow your frontend only
+CORS(app, origins=["https://student-predictor-frontend-ashy.vercel.app"])
 
 model = joblib.load("model.pkl")
 
@@ -14,8 +14,11 @@ model = joblib.load("model.pkl")
 def home():
     return "API Running"
 
-@app.route("/predict", methods=["POST"])
+@app.route("/predict", methods=["POST", "OPTIONS"])
 def predict():
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
     data = request.get_json()
 
     prediction = model.predict([[
