@@ -4,14 +4,15 @@ import os
 
 app = Flask(__name__)
 
+# Load model
 model = joblib.load("model.pkl")
 
-# ✅ FORCE CORS HEADERS (IMPORTANT)
+# ✅ Force CORS headers (robust solution)
 @app.after_request
 def add_cors_headers(response):
     response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
-    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     return response
 
 
@@ -22,21 +23,32 @@ def home():
 
 @app.route("/predict", methods=["POST", "OPTIONS"])
 def predict():
-    # ✅ Handle preflight manually
+    # ✅ Handle preflight request
     if request.method == "OPTIONS":
-        return jsonify({"message": "OK"}), 200
+        return jsonify({"message": "Preflight OK"}), 200
 
-    data = request.get_json()
+    try:
+        data = request.get_json()
 
-    prediction = model.predict([[
-        data["hours"],
-        data["attendance"],
-        data["marks"]
-    ]])
+        # Validate input
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
 
-    result = "Pass" if prediction[0] == 1 else "Fail"
+        hours = data.get("hours")
+        attendance = data.get("attendance")
+        marks = data.get("marks")
 
-    return jsonify({"result": result})
+        if hours is None or attendance is None or marks is None:
+            return jsonify({"error": "Missing input fields"}), 400
+
+        # Prediction
+        prediction = model.predict([[hours, attendance, marks]])
+        result = "Pass" if prediction[0] == 1 else "Fail"
+
+        return jsonify({"result": result})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
