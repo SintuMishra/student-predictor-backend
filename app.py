@@ -4,7 +4,9 @@ import joblib
 import os
 
 app = Flask(__name__)
-CORS(app)  # ✅ allow React to connect
+
+# ✅ FIXED CORS
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 model = joblib.load("model.pkl")
 
